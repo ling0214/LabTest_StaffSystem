@@ -16,14 +16,14 @@ class StaffCreationPage extends StatefulWidget {
     this.name,
     this.staffId,
     this.age,
-    Key? key,
-  }) : super(key: key);
+    super.key, // ✅ cleaner key initialization
+  });
 
   @override
-  _StaffCreationPageState createState() => _StaffCreationPageState();
+  StaffCreationPageState createState() => StaffCreationPageState();
 }
 
-class _StaffCreationPageState extends State<StaffCreationPage> {
+class StaffCreationPageState extends State<StaffCreationPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
@@ -52,7 +52,7 @@ class _StaffCreationPageState extends State<StaffCreationPage> {
         final staffCollection = FirebaseFirestore.instance.collection('staff');
 
         if (widget.isEdit && widget.docId != null) {
-          await staffCollection.doc(widget.docId).update({
+          await staffCollection.doc(widget.docId!).update({
             'name': name,
             'staffId': staffId,
             'age': age,
@@ -65,16 +65,20 @@ class _StaffCreationPageState extends State<StaffCreationPage> {
           });
         }
 
+        if (!mounted) return; // ✅ check to prevent context use error
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const StaffListPage()),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to ${widget.isEdit ? 'update' : 'add'} staff: $e')),
         );
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
@@ -101,6 +105,14 @@ class _StaffCreationPageState extends State<StaffCreationPage> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _idController.dispose();
+    _ageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -117,6 +129,11 @@ class _StaffCreationPageState extends State<StaffCreationPage> {
           child: Column(
             children: [
               const SizedBox(height: 10),
+              const CircleAvatar(
+                radius: 40,
+                child: Icon(Icons.person, size: 40),
+              ),
+              const SizedBox(height: 20),
               Text(
                 widget.isEdit ? "Update Staff Information" : "Staff Information",
                 style: TextStyle(

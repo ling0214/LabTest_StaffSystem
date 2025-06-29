@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'creation_page.dart';
-import 'app_colors.dart'; // ✅ import centralized color file
+import 'app_colors.dart'; // Centralized color file
 
 class StaffListPage extends StatelessWidget {
   const StaffListPage({super.key});
 
-  void _deleteStaff(BuildContext context, String docId) async {
+  void _deleteStaff(BuildContext context, String docId, String staffName) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Delete Staff"),
-        content: const Text("Are you sure you want to delete this staff member?"),
+        content: Text("Are you sure you want to delete $staffName?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
         ],
       ),
     );
@@ -22,13 +28,18 @@ class StaffListPage extends StatelessWidget {
     if (confirm == true) {
       try {
         await FirebaseFirestore.instance.collection('staff').doc(docId).delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Staff deleted successfully")),
-        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("$staffName has been deleted.")),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete staff: $e")),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to delete $staffName: $e")),
+          );
+        }
       }
     }
   }
@@ -100,8 +111,8 @@ class StaffListPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton.icon(
-                              onPressed: () {
-                                Navigator.pushReplacement(
+                              onPressed: () async {
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => StaffCreationPage(
@@ -113,13 +124,19 @@ class StaffListPage extends StatelessWidget {
                                     ),
                                   ),
                                 );
+
+                                if (context.mounted && result == 'updated') {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("${staffData['name']} has been updated.")),
+                                  );
+                                }
                               },
                               icon: Icon(Icons.edit, color: AppColors.edit),
                               label: Text("Edit", style: TextStyle(color: AppColors.edit)),
                             ),
                             const SizedBox(width: 10),
                             TextButton.icon(
-                              onPressed: () => _deleteStaff(context, staff.id),
+                              onPressed: () => _deleteStaff(context, staff.id, staffData['name']),
                               icon: Icon(Icons.delete, color: AppColors.delete),
                               label: Text("Delete", style: TextStyle(color: AppColors.delete)),
                             ),
@@ -136,11 +153,17 @@ class StaffListPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
-        onPressed: () {
-          Navigator.pushReplacement(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const StaffCreationPage()),
+            MaterialPageRoute(builder: (_) => const StaffCreationPage()),
           );
+
+          if (context.mounted && result == 'created') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("New staff has been added.")),
+            );
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text("Add Staff"),

@@ -23,21 +23,25 @@ class _StaffFormPageState extends State<StaffFormPage> {
     super.dispose();
   }
 
-  void submitData() async {
-    if (_formKey.currentState!.validate()) {
-      await FirebaseFirestore.instance.collection('staffs').add({
-        'name': nameController.text.trim(),
-        'id': idController.text.trim(),
-        'age': int.tryParse(ageController.text.trim()) ?? 0,
-      });
+ void submitData() async {
+  if (_formKey.currentState!.validate()) {
+    await FirebaseFirestore.instance.collection('staffs').add({
+      'name': nameController.text.trim(),
+      'id': idController.text.trim(),
+      'age': int.tryParse(ageController.text.trim()) ?? 0,
+    });
 
-      nameController.clear();
-      idController.clear();
-      ageController.clear();
+    nameController.clear();
+    idController.clear();
+    ageController.clear();
 
-      Navigator.pushNamed(context, '/staffList');
-    }
+    // ✅ Check if the widget is still in the widget tree
+    if (!mounted) return;
+
+    Navigator.pushNamed(context, '/staffList');
   }
+}
+
 
   Widget _buildTextField({
     required String label,
